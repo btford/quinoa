@@ -98,6 +98,7 @@ markdownInDirectory(dir).
   then(function (files) {
     files.forEach(function (file) {
       Git.log(file, function (err, shas) {
+        shas.fs = { date: (shas[Object.keys(shas).pop()] || {}).date || new Date() };
         Object.keys(shas).forEach(function (sha) {
           Git.readFile(sha, file.substr(dir.length+1), 'utf8', function (err, data) {
             var outFile = './build/' + extensionless(file.substr(dir.length+1)) + '/' + sha + '.html';
