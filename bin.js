@@ -101,7 +101,7 @@ markdownInDirectory(dir).
         shas.fs = { date: (shas[Object.keys(shas).pop()] || {}).date || new Date() };
         Object.keys(shas).forEach(function (sha) {
           Git.readFile(sha, file.substr(dir.length+1), 'utf8', function (err, data) {
-            var outFile = './build/' + extensionless(file.substr(dir.length+1)) + '/' + sha + '.html';
+            var outFile = './build/' + extensionless(file.substr(dir.length+1)) + '/' + (sha === 'fs' ? 'index' : sha) + '.html';
             mkdirp.sync(directory(outFile));
             data && fs.writeFileSync(outFile,
               nunjucks.render('index.html', {
