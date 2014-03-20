@@ -84,6 +84,12 @@ function extensionless (path) {
   return path.substr(0, path.length - 3);
 }
 
+function directory (path) {
+  var d = path.split('/');
+  d.splice(-1);
+  return d.join('/');
+}
+
 Git(dir);
 
 var TITLE = /#[ ]?(.+)/;
@@ -95,10 +101,7 @@ markdownInDirectory(dir).
         Object.keys(shas).forEach(function (sha) {
           Git.readFile(sha, file.substr(dir.length+1), 'utf8', function (err, data) {
             var outFile = './build/' + extensionless(file.substr(dir.length+1)) + '/' + sha + '.html';
-            var d = outFile.split('/');
-            d.splice(-1);
-            d = d.join('/');
-            mkdirp.sync(d);
+            mkdirp.sync(directory(outFile));
             data && fs.writeFileSync(outFile,
               nunjucks.render('index.html', {
                 title: (data.match(TITLE) || [])[1] || '',
