@@ -18,10 +18,6 @@ nunjucks.configure('views', { autoescape: false });
 
 var dir = process.cwd();
 
-function markdownInCurrentDirectory () {
-  return markdownInDirectory(process.cwd());
-}
-
 function markdownInDirectory (path) {
   var files = fs.readdirSync(path).map(prepend(path + '/'));
   return Q.all(files.filter(isMarkdown).map(notDotGitignored)).then(function (first) {
