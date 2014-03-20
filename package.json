@@ -1,0 +1,30 @@
+{
+  "name": "quinoa",
+  "version": "0.0.1",
+  "description": "static site generator with versioning",
+  "main": "bin.js",
+  "bin": {
+    "quinoa": "bin.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/btford/quinoa.git"
+  },
+  "author": "Brian Ford <btford@umich.edu>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/btford/quinoa/issues"
+  },
+  "homepage": "https://github.com/btford/quinoa",
+  "dependencies": {
+    "git-fs": "0.0.10",
+    "rewire": "^2.0.0",
+    "marked": "^0.3.2",
+    "q": "^1.0.1",
+    "nunjucks": "^1.0.1",
+    "mkdirp": "^0.3.5"
+  }
+}
