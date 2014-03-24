@@ -23,7 +23,7 @@ var argv            = require('minimist')(process.argv.slice(1));
 
 // aboslute path to the input files
 // all of these paths are absolute
-var inputDirectory    = path.resolve(argv._[1]);
+var inputDirectory    = path.resolve(argv._[1] || '');
 var outputDirectory   = path.resolve(argv.o || 'build');
 var gitRootDirectory  = getGitRoot(inputDirectory);
 
