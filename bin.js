@@ -126,7 +126,7 @@ function outFilePath (file, sha) {
   var originalFileName = extensionless(inputDirectiveRelative(file));
   return path.join.apply(null, [
       outputDirectory,
-      (originalFileName === 'index' && originalFileName) || '',
+      originalFileName === 'index' ? '' : originalFileName,
       (sha === 'fs' ? 'index' : sha) + '.html'
   ]);
 }
