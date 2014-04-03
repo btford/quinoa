@@ -18,13 +18,22 @@ you need this directory layout:
 ├── a.md
 ├── b.md
 ├── sub
-│   └── c.md
-└── views
-    └── index.html
+│   ├── c.md
+│   └── view.html
+├── sub-two
+│   └── d.md
+└── view.html
 ```
 
-[nunjucks](http://jlongster.github.io/nunjucks/) parses `views/index.html` interpolating
-the stuff from your markdown files as appropriate.
+[nunjucks](http://jlongster.github.io/nunjucks/) parses the nearest `view.html` interpolating
+the content your markdown files as appropriate.
+
+In the above example, `a.md`, `b.md`, and `d.md` use `view.html` as a template.
+`sub/c.md` uses `sub/view.html` as a template.
+
+### templates
+
+A template looks like this:
 
 ```html
 <!doctype html>
@@ -41,10 +50,42 @@ the stuff from your markdown files as appropriate.
 </html>
 ```
 
+### hacks
+`quinoa` lets you customize the behavior of your site with hacks.
+
+A `hack.js` file looks like this:
+
+```javascript
+module.exports = function (env) {
+  env.addFilter( ... );
+  env.addExtension( ... );
+  env.addPrerender( ... );
+};
+```
+
+hacks can use any of methods in nunjuck's [enviornment API](http://jlongster.github.io/nunjucks/api.html#environment).
+most commonly you'll want to use [`env.addFilter`](http://jlongster.github.io/nunjucks/api.html#addfilter) or [`env.addExtension`](http://jlongster.github.io/nunjucks/api.html#addfilter) to extend templates.
+
+`quinoa` adds one method to the nunjuck enviornment – `env.addPrerender`.
+this method takes a function which can modify template locals before `env.render` is called.
+
+quinoa applies hacks from the base of the git repo downward to the level of each template.
+
+```
+├── a.md
+├── hack.js
+├── sub
+│   ├── b.md
+│   └── hack.js
+└── view.html
+```
+
+in the above example, `a.md` will apply `hack.js`, and `b.md` will apply `hack.js` then `sub/hack.js`.
+
 
 ## building
 
-run `quinoa` in the root of a git repo
+run `quinoa` from within a git repo
 
 you'll get something like this:
 
@@ -73,10 +114,14 @@ you'll get something like this:
 the `index.html` files correspond to the state of the file on the disk.
 the sha-lookin' `.html` files correspond to revisions of those files.
 
+use something like [nginx](http://nginx.org/) to serve the files.
+
 that's all
 
 
 ## fyi
+
+`quinoa`:
 
 * only works in `git` repos for now
 * follows your gitignore rules
