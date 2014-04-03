@@ -14,7 +14,6 @@ Git.__set__('CACHE_LIFE', [100, 100]);
 var marked   = require('marked');
 var nunjucks = require('nunjucks');
 
-nunjucks.configure('views', { autoescape: false });
 
 /*
  * read config options
@@ -27,23 +26,42 @@ var inputDirectory    = path.resolve(argv._[1] || '');
 var outputDirectory   = path.resolve(argv.o || 'build');
 var gitRootDirectory  = getGitRoot(inputDirectory);
 
+function getNunjucksEnviornment () {
+  var env = nunjucks.configure(inputDirectory, {
+    autoescape: false
+  });
+  env = hackNunjucksEnviornment(env);
+  return env;
+}
+
+// modifies env with a "pre-render" step
+function hackNunjucksEnviornment (env) {
+  var originalRender = env.render;
+  env._preRenderSteps = [];
+  env.addPrerender = function (fn) {
+    env._preRenderSteps.push(fn);
+  };
+  env.render = function hackedRender (view, data) {
+    for (var i = 0, ii = env._preRenderSteps.length; i < ii; i += 1) {
+      data = env._preRenderSteps[i](data) || data;
+    }
+    arguments[1] = data;
+    return originalRender.apply(env, arguments);
+  };
+  return env;
+}
+
 // init the git-fs helper
 Git(gitRootDirectory);
 
 // given an absolute path, return an absolute path representing
 // the immediate git repo of that path
 function getGitRoot (somePath) {
-  var segments = somePath.split(path.sep),
-      maybeGitRootPath;
-
-  while (!isGitRepo(maybeGitRootPath = '/' + path.join.apply(null, segments))) {
-    if (segments.length > 0) {
-      segments.pop();
-    } else {
-      throw new Error('looks like `' + somePath + '` is\'nt within a git repo');
-    }
+  try {
+    return ascend(somePath, isGitRepo);
+  } catch (e) {
+    throw new Error('looks like `' + somePath + '` is\'nt within a git repo');
   }
-  return maybeGitRootPath;
 }
 
 function isGitRepo (file) {
@@ -118,16 +136,20 @@ function gitRootRelative (file) {
   return file.substr(gitRootDirectory.length+1);
 }
 
-function inputDirectiveRelative (file) {
+function isGitRootDirectory (thisPath) {
+  return thisPath === gitRootDirectory;
+}
+
+function inputDirectoryRelative (file) {
   return file.substr(inputDirectory.length+1);
 }
 
 function outFilePath (file, sha) {
-  var originalFileName = extensionless(inputDirectiveRelative(file));
+  var originalFileName = extensionless(inputDirectoryRelative(file));
   return path.join.apply(null, [
       outputDirectory,
       originalFileName === 'index' ? '' : originalFileName,
-      (sha === 'fs' ? 'index' : sha) + '.html'
+      sha + '.html'
   ]);
 }
 
@@ -142,20 +164,90 @@ function seriouslyWriteThisFile (file, contents) {
   fs.writeFileSync(file, contents);
 }
 
+function findView (somePath) {
+  return path.join(ascendUntil(somePath, function (thisPath) {
+    return fs.existsSync(path.join(thisPath, 'view.html'));
+  }, isGitRootDirectory), 'view.html');
+}
+
+function findAllHacks (somePath) {
+  return ascendFilterWithinGitRepo(somePath, function (someFile) {
+    var hackPath = path.join(someFile, 'hack.js');
+    if (fs.existsSync(hackPath)) {
+      return require(hackPath);
+    }
+  })
+}
+
+// traverse up a directory until you find a directory that
+// matches the criteria
+function ascend (somePath, criteria) {
+  var segments = somePath.split(path.sep),
+      maybeMatchingPath;
+
+  while (!criteria(maybeMatchingPath = '/' + path.join.apply(null, segments))) {
+    if (segments.length > 0) {
+      segments.pop();
+    } else {
+      throw new Error('can\'t find a matching directory');
+    }
+  }
+  return maybeMatchingPath;
+}
+
+function ascendFilterWithinGitRepo (somePath, predicate) {
+  return ascendFilterUntil(somePath, predicate, isGitRootDirectory);
+}
+
+function ascendFilterUntil (somePath, predicate, until) {
+  var filter = [];
+  ascend(somePath, function (thisPath) {
+    var mapping = predicate(thisPath);
+    if (mapping) {
+      filter.push(mapping);
+    }
+    return until(thisPath);
+  });
+  return filter;
+}
+
+function ascendUntil (somePath, primary, until) {
+  var maybeMatchingPath = ascend(somePath, function (thisPath) {
+    return primary(thisPath) || until(thisPath);
+  });
+
+  return primary(maybeMatchingPath) && maybeMatchingPath;
+}
+
+function render (file, data, shas, sha) {
+  var view = findView(file);
+
+  var env = getNunjucksEnviornment();
+
+  var hacks = findAllHacks(file);
+
+  for (var i = hacks.length - 1; i >= 0; i -= 1) {
+    hacks[i](env);
+  }
+
+  return env.render(inputDirectoryRelative(view), {
+    title: title(data),
+    content: marked(data.replace(TITLE, '')),
+    date: shas[sha].date,
+    file: file,
+    shas: shas
+  });
+}
+
 markdownInDirectory(inputDirectory).
   then(function (files) {
     files.forEach(function (file) {
       Git.log(file, function (err, shas) {
-        shas.fs = { date: (shas[Object.keys(shas).pop()] || {}).date || new Date() };
+        shas.index = { date: (shas[Object.keys(shas).pop()] || {}).date || new Date() };
         Object.keys(shas).forEach(function (sha) {
-          Git.readFile(sha, gitRootRelative(file), 'utf8', function (err, data) {
+          Git.readFile(sha === 'index' ? 'fs' : sha, gitRootRelative(file), 'utf8', function (err, data) {
             var outFile = outFilePath(file, sha);
-            seriouslyWriteThisFile(outFile,
-              nunjucks.render('index.html', {
-                title: title(data),
-                content: marked(data.replace(TITLE, '')),
-                date: shas[sha].date
-              }));
+            seriouslyWriteThisFile(outFile, render(file, data, shas, sha));
           });
         });
       });
