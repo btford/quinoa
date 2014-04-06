@@ -248,7 +248,11 @@ markdownInDirectory(inputDirectory).
         Object.keys(shas).forEach(function (sha) {
           Git.readFile(sha === 'index' ? 'fs' : sha, gitRootRelative(file), 'utf8', function (err, data) {
             var outFile = outFilePath(file, sha);
-            seriouslyWriteThisFile(outFile, render(file, data, shas, sha));
+            try {
+              seriouslyWriteThisFile(outFile, render(file, data, shas, sha));
+            } catch (e) {
+              console.log('could not write ' + outFile);
+            }
           });
         });
       });
