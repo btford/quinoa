@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var Q        = require('Q');
+var Q        = require('q');
 var fs       = require('fs');
 var mkdirp   = require('mkdirp');
 var cp       = require('child_process');
