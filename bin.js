@@ -27,8 +27,9 @@ var outputDirectory   = path.resolve(argv.o || 'build');
 var gitRootDirectory  = getGitRoot(inputDirectory);
 
 function getNunjucksEnviornment () {
-  var env = nunjucks.configure(inputDirectory, {
-    autoescape: false
+  var env = nunjucks.configure(inputDirectory);
+  env.addFilter('markdown', function (str) {
+    return marked(str);
   });
   env = hackNunjucksEnviornment(env);
   return env;
@@ -232,7 +233,7 @@ function render (file, data, shas, sha) {
 
   return env.render(inputDirectoryRelative(view), {
     title: title(data),
-    content: marked(data.replace(TITLE, '')),
+    content: data,
     date: shas[sha].date,
     file: file,
     shas: shas
