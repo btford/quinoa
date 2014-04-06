@@ -1,6 +1,6 @@
 {
   "name": "quinoa",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "static site generator with versioning",
   "main": "bin.js",
   "bin": {
