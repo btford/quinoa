@@ -105,7 +105,7 @@ function notDotGitignored (path) {
   // returns the path if the file is ignored
   // returns nothing if the file is not ignored
   var deferred = Q.defer();
-  cp.exec('git check-ignore ' + path.substr(gitRootDirectory.length+1), {cwd: gitRootDirectory}, function (err, stdout) {
+  cp.exec('git check-ignore ' + gitRootRelative(path), {cwd: gitRootDirectory}, function (err, stdout) {
     deferred.resolve(err && !stdout && path);
   });
   return deferred.promise;
