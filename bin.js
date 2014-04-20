@@ -137,6 +137,10 @@ function gitRootRelative (file) {
   return file.substr(gitRootDirectory.length+1);
 }
 
+function outputDirectoryRelative (file) {
+  return file.substr(outputDirectory.length+1);
+}
+
 function isGitRootDirectory (thisPath) {
   return thisPath === gitRootDirectory;
 }
@@ -220,7 +224,7 @@ function ascendUntil (somePath, primary, until) {
   return primary(maybeMatchingPath) && maybeMatchingPath;
 }
 
-function render (file, data, shas, sha) {
+function render (file, locals) {
   var view = findView(file);
 
   var env = getNunjucksEnviornment();
@@ -231,34 +235,55 @@ function render (file, data, shas, sha) {
     hacks[i](env);
   }
 
-  return env.render(inputDirectoryRelative(view), {
-    title: title(data),
-    content: data,
-    date: shas[sha].date,
-    file: file,
-    shas: shas
+  locals.date = locals.date || locals.shas[locals.sha].date;
+  locals.title = locals.title || title(locals.content);
+
+  return env.render(inputDirectoryRelative(view), locals);
+}
+
+function fileToPages (file) {
+  var deferred = Q.defer();
+  var pages = [];
+  Git.log(file, function (err, shas) {
+    shas.index = { date: (shas[Object.keys(shas).pop()] || {}).date || new Date() };
+    var numberOfShas = Object.keys(shas).length;
+    Object.keys(shas).forEach(function (sha) {
+      var outFile = outFilePath(file, sha);
+      Git.readFile(sha === 'index' ? 'fs' : sha, gitRootRelative(file), 'utf8', function (err, content) {
+        if (err) {
+          return deferred.reject(err);
+        }
+        pages.push({
+          outFile: outFile,
+          outPath: outputDirectoryRelative(outFile),
+          sha: sha,
+          shas: shas,
+          file: file,
+          content: content
+        });
+        if (pages.length === numberOfShas) {
+          deferred.resolve(pages);
+        }
+      });
+    });
   });
+  return deferred.promise;
 }
 
 markdownInDirectory(inputDirectory).
   then(function (files) {
-    files.forEach(function (file) {
-      Git.log(file, function (err, shas) {
-        shas.index = { date: (shas[Object.keys(shas).pop()] || {}).date || new Date() };
-        Object.keys(shas).forEach(function (sha) {
-          Git.readFile(sha === 'index' ? 'fs' : sha, gitRootRelative(file), 'utf8', function (err, data) {
-            var outFile = outFilePath(file, sha);
-            try {
-              seriouslyWriteThisFile(outFile, render(file, data, shas, sha));
-            } catch (e) {
-              console.log('could not write ' + outFile);
-            }
-          });
-        });
+    Q.all(files.map(fileToPages)).then(flatten).then(function (pages) {
+      pages.forEach(function (page) {
+        page.pages = pages;
+        try {
+          seriouslyWriteThisFile(page.outFile,
+              render(page.file, page));
+        } catch (e) {
+          console.log('could not write ' + page.outFile);
+        }
       });
     });
   }).
   catch(function (err) {
     console.log(err, err.stack)
   })
-
