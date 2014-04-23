@@ -235,9 +235,6 @@ function render (file, locals) {
     hacks[i](env);
   }
 
-  locals.date = locals.date || locals.shas[locals.sha].date;
-  locals.title = locals.title || title(locals.content);
-
   return env.render(inputDirectoryRelative(view), locals);
 }
 
@@ -259,7 +256,9 @@ function fileToPages (file) {
           sha: sha,
           shas: shas,
           file: file,
-          content: content
+          date: shas[sha].date,
+          content: content,
+          title: title(content)
         });
         if (pages.length === numberOfShas) {
           deferred.resolve(pages);
