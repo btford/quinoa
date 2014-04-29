@@ -1,5 +1,7 @@
 # quinoa
 
+![selfie of @btford with a bag of quinoa](/quinoa.jpg)]
+
 static site generator with versioning inspired by [wheat](https://github.com/creationix/wheat)
 
 
