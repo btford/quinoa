@@ -188,9 +188,10 @@ function findAllHacks (somePath) {
 // matches the criteria
 function ascend (somePath, criteria) {
   var segments = somePath.split(path.sep),
+      prefix = path.sep === '/' ? '/' : '',
       maybeMatchingPath;
 
-  while (!criteria(maybeMatchingPath = '/' + path.join.apply(null, segments))) {
+  while (!criteria(maybeMatchingPath = prefix + path.join.apply(null, segments))) {
     if (segments.length > 0) {
       segments.pop();
     } else {
