@@ -61,7 +61,7 @@ function getGitRoot (somePath) {
   try {
     return ascend(somePath, isGitRepo);
   } catch (e) {
-    throw new Error('looks like `' + somePath + '` is\'nt within a git repo');
+    throw new Error('looks like `' + somePath + '` isn\'t within a git repo');
   }
 }
 
