@@ -170,9 +170,14 @@ function seriouslyWriteThisFile (file, contents) {
 }
 
 function findView (somePath) {
-  return path.join(ascendUntil(somePath, function (thisPath) {
-    return fs.existsSync(path.join(thisPath, 'view.html'));
-  }, isGitRootDirectory), 'view.html');
+  try {
+    return path.join(ascendUntil(somePath, function (thisPath) {
+      return fs.existsSync(path.join(thisPath, 'view.html'));
+    }, isGitRootDirectory), 'view.html');
+  } catch (e) {
+    throw new Error('Could not find view.html anywhere in the input');
+  }
+
 }
 
 function findAllHacks (somePath) {
