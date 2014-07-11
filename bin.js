@@ -61,7 +61,7 @@ function getGitRoot (somePath) {
   try {
     return ascend(somePath, isGitRepo);
   } catch (e) {
-    throw new Error('looks like `' + somePath + '` is\'nt within a git repo');
+    throw new Error('looks like `' + somePath + '` isn\'t within a git repo');
   }
 }
 
@@ -193,9 +193,10 @@ function findAllHacks (somePath) {
 // matches the criteria
 function ascend (somePath, criteria) {
   var segments = somePath.split(path.sep),
+      prefix = path.sep === '/' ? '/' : '',
       maybeMatchingPath;
 
-  while (!criteria(maybeMatchingPath = '/' + path.join.apply(null, segments))) {
+  while (!criteria(maybeMatchingPath = prefix + path.join.apply(null, segments))) {
     if (segments.length > 0) {
       segments.pop();
     } else {
