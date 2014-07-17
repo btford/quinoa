@@ -69,13 +69,14 @@ function isGitRepo (file) {
   return fs.existsSync(path.join(file, '.git'));
 }
 
-
-
 function markdownInDirectory (path) {
   var files = fs.readdirSync(path).map(prepend(path));
-  return Q.all(files.filter(isMarkdown).map(notDotGitignored)).then(function (first) {
-    return Q.all(files.filter(isVisibleDirectory).map(notDotGitignored)).then(function (nested) {
-      return Q.all(nested.filter(identity).map(markdownInDirectory)).then(function (nested) {
+  return Q.all(files.filter(isMarkdown).map(notDotGitignored))
+      .then(function (first) {
+        return Q.all(files.filter(isVisibleDirectory).map(notDotGitignored))
+            .then(function (nested) {
+              return Q.all(nested.filter(identity).map(markdownInDirectory))
+            .then(function (nested) {
         return first.concat(flatten(nested));
       });
     });
@@ -277,13 +278,15 @@ function fileToPages (file) {
 
 markdownInDirectory(inputDirectory).
   then(function (files) {
-    Q.all(files.map(fileToPages)).then(flatten).then(function (pages) {
-      pages.forEach(function (page) {
-        page.pages = pages;
-        try {
-          seriouslyWriteThisFile(page.outFile,
-              render(page.file, page));
-        } catch (e) {
+    Q.all(files.map(fileToPages)).
+        then(flatten).
+        then(function (pages) {
+          pages.forEach(function (page) {
+          page.pages = pages;
+          try {
+            seriouslyWriteThisFile(page.outFile,
+            render(page.file, page));
+          } catch (e) {
           console.log('could not write ' + page.outFile);
         }
       });
@@ -291,4 +294,4 @@ markdownInDirectory(inputDirectory).
   }).
   catch(function (err) {
     console.log(err, err.stack)
-  })
+  });
